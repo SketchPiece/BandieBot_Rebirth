@@ -1,3 +1,5 @@
+let config = require('./botconfig.json');
+
 module.exports.randomInteger = function(min, max) {
     var rand = min + Math.random() * (max - min);
     rand = Math.round(rand);
@@ -10,7 +12,7 @@ module.exports.IsBannedChannel = function(id) {
     return false;
 }
 module.exports.FindMats = function(bot, message) {
-    let user = message.author.username;
+    // let user = message.author.username;
     let userid = message.author.id;
     /*поиск матов*/
     var userMessage = message.content.split(/[ .:;?!~,^`'"&|#()<>*_{}\[\]\r\n/\\]+/); //split(/(\s+)/).filter( function(e) { return e.trim().length > 0; } );
@@ -52,3 +54,24 @@ module.exports.FindMats = function(bot, message) {
     return false;
     /*поиск матов*/
 }
+
+// if (profile[userid].mats <= 0) return;
+
+
+// if (profile[userid].checkUser != checkBot) {
+//     profile[userid].forgiveUser = 1;
+//     profile[userid].checkUser = checkBot;
+//     console.log(`Я обновила "Прощение" пользователю ${user}`);
+//     //console.log(profile[userid].forgiveUser);
+// }
+// if (profile[userid].checkHiUser != checkHiBot) {
+//     profile[userid].hiCheckout = 0;
+//     profile[userid].checkHiUser = checkHiBot;
+//     //console.log(`Я обновила "Привет" пользователю ${user}`);
+//     //console.log(profile[userid].forgiveUser);
+// }
+// bot.send = function send(msg) {
+//     message.channel.send(msg);
+// };
+
+// if (FindMats(bot, message)) return;

@@ -2,21 +2,20 @@
 const bot = new Discord.Client();
 bot.commands = new Discord.Collection();
 bot.aliases = new Discord.Collection();
+bot.quests = {};
 const fs = require('fs');
 let config = require('./botconfig.json');
 let profile = require('./profile.json');
 let aux = require("./auxiliary.js");
+let User = require("./mongo").User
+let QuestEngine = require("./questEngine")
 let token = config.apitoken;
 let prefix = config.prefix;
-
-let checkBot = 0;
-let checkHiBot = 0;
 
 fs.readdir('./cmds', (err, files) => {
     if (err) console.log(err);
     let jsfiles = files.filter(f => f.split(".").pop() === "js");
-    if (jsfiles.length <= 0) console.log("Нет команд для загрузки!");
-    console.log(`Я загрузила ${jsfiles.length} комманд`);
+    if (jsfiles.length <= 0) return console.log("Нет команд для загрузки!");
     jsfiles.forEach((f, i) => {
         let props = require(`./cmds/${f}`);
         console.log(`${i+1}.${f} Загружен!`);
@@ -25,7 +24,53 @@ fs.readdir('./cmds', (err, files) => {
             bot.aliases.set(alias, props.help.name);
         })
     });
+    console.log(`Я загрузила ${jsfiles.length} комманд`);
 });
+
+fs.readdir('./quests', (err, files) => {
+    if (err) console.log(err);
+    let qstfiles = files.filter(f => f.split(".").pop() === "qst");
+    if (qstfiles.length <= 0) return console.log("Нет квестов для загрузки...");
+
+    qstfiles.forEach((f, i) => {
+        let questCode = fs.readFileSync(`./quests/${f}`, 'utf8');
+        let questName = f.split('.')[0];
+        let questObj = QuestEngine.QuestParse(questCode);
+        if (!questObj) {
+            console.log(`${i+1}.${questName} Ошибка!`);
+        } else {
+            bot.quests[questName] = questObj;
+            console.log(`${i+1}.${questName} Загружен!`);
+        }
+    })
+    console.log(`Я загрузила ${qstfiles.length} квестов`)
+});
+
+async function IsQuest(id) {
+    let user = await User.findOne({ id: id }).exec();
+    UserJson = JSON.parse(user.questJson);
+    if (!UserJson["IsQuest"]) {
+        user.questJson = JSON.stringify({ "IsQuest": false });
+        user.save((err) => { if (err) console.log(err) })
+        return false
+    }
+    if (UserJson["IsQuest"]) return true;
+    else return false;
+}
+
+async function QuestEngineWork(bot, message) {
+    let user = await User.findOne({ id: bot.userid }).exec();
+    let json = JSON.parse(user.questJson);
+
+    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
+    next = temp.shift().toLowerCase();
+    if (!bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    json["Status"] = bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]
+    bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    user.questJson = JSON.stringify(json);
+    user.save((err) => { if (err) console.log(err) })
+}
 
 /* Всопогательные функции */
 
@@ -34,6 +79,23 @@ let randomInteger = aux.randomInteger;
 let IsBannedChannel = aux.IsBannedChannel;
 
 let FindMats = aux.FindMats;
+
+async function CreateUser(bot) {
+    user = await User.findOne({ id: bot.userid });
+    // , async(err, user) => {
+    //     if (err) return console.log(err);
+    //     if (!user) {
+    //         user = new User({ nickname: bot.name, id: bot.userid, questJson: "{}" });
+    //         await user.save(function(err) {
+    //             if (err) console.log(err);
+    //         });
+    //     }
+    // }
+    if (!user) {
+        user = new User({ nickname: bot.name, id: bot.userid, questJson: "{}" });
+        await user.save();
+    }
+}
 
 /* Всопогательные функции */
 
@@ -44,41 +106,7 @@ bot.on('ready', () => {
         console.log(link);
     })
     bot.user.setActivity(">помощь", { type: "WATCHING" });
-    /*таймер запуск*/
-    setInterval(() => {
-        timeActionCheck()
-    }, 1000 * 60 * 60 * 24)
-    setInterval(() => {
-        timeActionSpam()
-    }, 1000 * 30)
-    setInterval(() => {
-        //sendchannel.send('Тестовое сообщение каждые 5 сек')
-    }, 5000)
 })
-
-
-// bot.on('guildMemberAdd', function(member){
-//   // member.send('Добро пожаловать!')
-//   var sendchannel = bot.channels.find(channel => channel.id === '551774501290115085');//важно изменить
-//   sendchannel.send(`Привет ${member}`);
-// })
-
-// bot.on('guildMemberRemove', function(member){
-//   // member.send('Добро пожаловать!')
-//   var sendchannel = bot.channels.find(channel => channel.id === '551774501290115085'); //важно изменить
-//   sendchannel.send(`Пока ${member}`);
-// })
-
-function timeActionCheck() {
-    checkBot++;
-}
-
-function timeActionSpam() {
-    checkHiBot++;
-}
-
-
-/*таймер снаружи*/
 
 bot.on('message', async message => {
     if (message.author.bot) return;
@@ -89,49 +117,39 @@ bot.on('message', async message => {
         process.exit();
     }
 
+    bot.name = message.author.username;
+    bot.userid = message.author.id;
 
-    let user = message.author.username;
-    let userid = message.author.id;
-
-
-    if (!profile[userid]) {
-        profile[userid] = {
-            username: user,
-            mats: 10,
-            warns: 0,
-            forgives: 0,
-            forgiveUser: 1,
-            checkUser: 0,
-            checkHiUser: 0,
-            hiCheckout: 0,
-        };
-    };
-
-    fs.writeFile('./profile.json', JSON.stringify(profile), (err) => {
-        if (err) console.log(err);
-    })
-    if (IsBannedChannel(message.channel.id)) return;
-
-    if (profile[userid].mats <= 0) return;
-
-
-    if (profile[userid].checkUser != checkBot) {
-        profile[userid].forgiveUser = 1;
-        profile[userid].checkUser = checkBot;
-        console.log(`Я обновила "Прощение" пользователю ${user}`);
-        //console.log(profile[userid].forgiveUser);
-    }
-    if (profile[userid].checkHiUser != checkHiBot) {
-        profile[userid].hiCheckout = 0;
-        profile[userid].checkHiUser = checkHiBot;
-        //console.log(`Я обновила "Привет" пользователю ${user}`);
-        //console.log(profile[userid].forgiveUser);
-    }
     bot.send = function send(msg) {
         message.channel.send(msg);
     };
+    bot.sendQuest = async function(stage) {
+        let answer = `${stage.question}`
+        if (stage.end) {
+            let user = await User.findOne({ id: bot.userid }).exec();
+            user.questJson = JSON.stringify({ "IsQuest": false });
+            user.save((err) => { if (err) console.log(err) })
+            return bot.send(answer + "\n`Конец квеста`");
+        }
+        answer += "```"
+        for (key in stage.answers) {
+            answer += `\n>${key}`;
+        }
+        answer += "```"
 
-    if (FindMats(bot, message)) return;
+        bot.send(answer);
+    }
+
+    await CreateUser(bot);
+
+    if (IsBannedChannel(message.channel.id)) return;
+
+
+    // console.log(await IsQuest(bot.userid));
+    if (await IsQuest(bot.userid)) {
+        return QuestEngineWork(bot, message);
+        // console.log("Запущен квест");
+    }
 
     if (!message.content.startsWith(prefix)) return;
     let args = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
