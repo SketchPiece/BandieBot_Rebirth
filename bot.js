@@ -88,7 +88,6 @@ bot.on('message', async message => {
         console.log("Выход...");
         process.exit();
     }
-    // var channelMoon = bot.channels.find(channel => channel.id === '578660037384339489'); //важно изменить
 
 
     let user = message.author.username;
