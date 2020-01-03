@@ -9,6 +9,7 @@ function QuestParse(content) {
         questInfo = strings.shift().match(/\[(.+?)\]/g);
         questObj.title = questInfo[0].match(/\[(.+?)\]/)[1];
         questObj.description = questInfo[1].match(/\[(.+?)\]/)[1];
+        questObj.author = questInfo[2].match(/\[(.+?)\]/)[1];
         questObj.stages = {};
 
         strings.forEach(str => {
