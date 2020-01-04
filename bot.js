@@ -46,38 +46,6 @@ fs.readdir('./quests', (err, files) => {
     console.log(`Я загрузила ${qstfiles.length} квестов`)
 });
 
-async function IsQuest(id) {
-    let user = await User.findOne({ id: id }).exec();
-    UserJson = JSON.parse(user.questJson);
-    if (!UserJson["IsQuest"]) {
-        user.questJson = JSON.stringify({ "IsQuest": false });
-        user.save((err) => { if (err) console.log(err) })
-        return false
-    }
-    if (UserJson["IsQuest"]) return true;
-    else return false;
-}
-
-async function QuestEngineWork(bot, message) {
-    let user = await User.findOne({ id: bot.userid }).exec();
-    let json = JSON.parse(user.questJson);
-
-    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
-    let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
-    next = temp.shift().toLowerCase();
-    if (next == "выход") {
-        let user = await User.findOne({ id: bot.userid }).exec();
-        user.questJson = JSON.stringify({ "IsQuest": false });
-        user.save((err) => { if (err) console.log(err) });
-        return bot.dmsend("`Тест был завершен досрочно`");
-    }
-    if (!bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
-    json["Status"] = bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]
-    bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
-    user.questJson = JSON.stringify(json);
-    user.save((err) => { if (err) console.log(err) })
-}
-
 /* Всопогательные функции */
 
 bot.randint = function(min, max) {
@@ -93,6 +61,10 @@ let FindMats = aux.FindMats;
 let MatsAction = aux.MatsAction;
 
 let FinishAttempts = aux.FinishAttempts;
+
+let IsQuest = aux.IsQuest;
+
+let QuestEngineWork = aux.QuestEngineWork;
 
 let EveryDayAt = aux.EveryDayAt;
 
@@ -143,11 +115,6 @@ bot.on('message', async message => {
         if (await IsQuest(bot.userid)) return QuestEngineWork(bot, message);
         return;
     }
-
-    // if (message.content == "!reset" && message.member.hasPermission("BAN_MEMBERS")) {
-    //     console.log("Выход...");
-    //     process.exit();
-    // }
 
     bot.name = message.author.username;
     bot.userid = message.author.id;

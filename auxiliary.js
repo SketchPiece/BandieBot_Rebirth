@@ -1,6 +1,38 @@
 let config = require('./botconfig.js');
 let User = require("./mongo").User
 
+module.exports.IsQuest = async function(id) {
+    let user = await User.findOne({ id: id }).exec();
+    UserJson = JSON.parse(user.questJson);
+    if (!UserJson["IsQuest"]) {
+        user.questJson = JSON.stringify({ "IsQuest": false });
+        user.save((err) => { if (err) console.log(err) })
+        return false
+    }
+    if (UserJson["IsQuest"]) return true;
+    else return false;
+}
+
+module.exports.QuestEngineWork = async function(bot, message) {
+    let user = await User.findOne({ id: bot.userid }).exec();
+    let json = JSON.parse(user.questJson);
+
+    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
+    next = temp.shift().toLowerCase();
+    if (next == "выход") {
+        let user = await User.findOne({ id: bot.userid }).exec();
+        user.questJson = JSON.stringify({ "IsQuest": false });
+        user.save((err) => { if (err) console.log(err) });
+        return bot.dmsend("`Тест был завершен досрочно`");
+    }
+    if (!bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    json["Status"] = bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]
+    bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    user.questJson = JSON.stringify(json);
+    user.save((err) => { if (err) console.log(err) })
+}
+
 module.exports.IsBannedChannel = function(id) {
     for (var i = 0; i < config.banned_channels.length; i++) {
         if (config.banned_channels[i] == id) return true;
