@@ -114,7 +114,7 @@ bot.on('ready', () => {
     bot.user.setActivity(">помощь", { type: "WATCHING" });
 
     setInterval(() => {
-        sendchannel.send('Тестовое сообщение каждые 5 сек')
+        // sendchannel.send('Тестовое сообщение каждые 5 сек')
     }, 5000)
 
 })
