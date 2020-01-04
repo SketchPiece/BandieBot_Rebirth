@@ -5,7 +5,7 @@ bot.aliases = new Discord.Collection();
 bot.quests = {};
 const fs = require('fs');
 let config = require('./botconfig.json');
-let profile = require('./profile.json');
+// let profile = require('./profile.json');
 let aux = require("./auxiliary.js");
 let User = require("./mongo").User
 let QuestEngine = require("./questEngine")
@@ -65,6 +65,12 @@ async function QuestEngineWork(bot, message) {
     if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
     let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
     next = temp.shift().toLowerCase();
+    if(next == "выход"){
+        let user = await User.findOne({ id: bot.userid }).exec();
+        user.questJson = JSON.stringify({ "IsQuest": false });
+        user.save((err) => { if (err) console.log(err) });
+        return bot.dmsend("`Тест был завершен досрочно`");
+    }
     if (!bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
     json["Status"] = bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]
     bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
@@ -110,12 +116,21 @@ bot.on('ready', () => {
 
 bot.on('message', async message => {
     if (message.author.bot) return;
-    if (message.channel.type == "dm") return;
-
-    if (message.content == "!reset" && message.member.hasPermission("BAN_MEMBERS")) {
-        console.log("Выход...");
-        process.exit();
+    bot.dmsend = function(msg){
+        message.author.send(msg);
     }
+    if (message.channel.type == "dm") {
+        if (await IsQuest(bot.userid)) {
+            return QuestEngineWork(bot, message);
+            // console.log("Запущен квест");
+        }
+        return;
+    }
+
+    // if (message.content == "!reset" && message.member.hasPermission("BAN_MEMBERS")) {
+    //     console.log("Выход...");
+    //     process.exit();
+    // }
 
     bot.name = message.author.username;
     bot.userid = message.author.id;
@@ -124,20 +139,24 @@ bot.on('message', async message => {
         message.channel.send(msg);
     };
     bot.sendQuest = async function(stage) {
-        let answer = `${stage.question}`
+        let answer = "";        
+        let breaks = stage.question.split("(br)");
+        breaks.forEach((str)=>{
+            answer += str + "\n";
+        });
         if (stage.end) {
             let user = await User.findOne({ id: bot.userid }).exec();
             user.questJson = JSON.stringify({ "IsQuest": false });
-            user.save((err) => { if (err) console.log(err) })
-            return bot.send(answer + "\n`Конец квеста`");
+            user.save((err) => { if (err) console.log(err) });
+            return bot.dmsend(answer + "\n`Конец квеста`");
         }
         answer += "```"
         for (key in stage.answers) {
-            answer += `\n>${key}`;
+            answer += `\n${prefix}${key}`;
         }
         answer += "```"
 
-        bot.send(answer);
+        bot.dmsend(answer);
     }
 
     await CreateUser(bot);
@@ -146,10 +165,6 @@ bot.on('message', async message => {
 
 
     // console.log(await IsQuest(bot.userid));
-    if (await IsQuest(bot.userid)) {
-        return QuestEngineWork(bot, message);
-        // console.log("Запущен квест");
-    }
 
     if (!message.content.startsWith(prefix)) return;
     let args = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
