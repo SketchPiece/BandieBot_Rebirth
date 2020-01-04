@@ -1,1 +1,0 @@
-console.log(require("./botconfig").banned_channels)
