@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/bandie";
+const uri = require("./botconfig").mongo_uri;
 
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 console.log(uri);

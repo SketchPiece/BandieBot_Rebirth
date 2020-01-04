@@ -1,21 +1,17 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
-const apitoken = require("../botconfig.json").apitoken;
 const axios = require('axios');
 
-module.exports.run = async (bot,message,args) => {
-    if(message.author.avatarURL==null) return bot.send("Да, хорошая шутка.");
+module.exports.run = async(bot, message, args) => {
+    if (message.author.avatarURL == null) return bot.send("Да, хорошая шутка.");
     url = message.author.avatarURL;
     axios.get(url, {
-        headers: {
-                Authorization: apitoken
-        },
         responseType: "arraybuffer"
     }).then(async res => {
-        await message.channel.send(`*Саркастичный взгляд*\nНу... и что ты хочешь услышать?`,{
+        await message.channel.send(`*Саркастичный взгляд*\nНу... и что ты хочешь услышать?`, {
             files: [{
                 attachment: await res.data,
-                name: `${message.author.id}.png`   
+                name: `${message.author.id}.png`
             }]
         }).then(() => message.channel.stopTyping());
     }).catch(err => console.error(err));

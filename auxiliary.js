@@ -1,4 +1,4 @@
-let config = require('./botconfig.json');
+let config = require('./botconfig.js');
 
 module.exports.randomInteger = function(min, max) {
     var rand = min + Math.random() * (max - min);

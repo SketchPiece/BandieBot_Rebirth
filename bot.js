@@ -4,12 +4,12 @@ bot.commands = new Discord.Collection();
 bot.aliases = new Discord.Collection();
 bot.quests = {};
 const fs = require('fs');
-let config = require('./botconfig.json');
+let config = require('./botconfig.js');
 // let profile = require('./profile.json');
 let aux = require("./auxiliary.js");
 let User = require("./mongo").User
 let QuestEngine = require("./questEngine")
-let token = config.apitoken;
+let token = config.token;
 let prefix = config.prefix;
 
 fs.readdir('./cmds', (err, files) => {

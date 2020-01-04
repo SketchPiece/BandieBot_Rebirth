@@ -1,0 +1,1 @@
+console.log(process.env.BINDIE_BANNED_CHANNEL)
