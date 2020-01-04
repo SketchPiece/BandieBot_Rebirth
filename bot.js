@@ -65,7 +65,7 @@ async function QuestEngineWork(bot, message) {
     if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
     let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
     next = temp.shift().toLowerCase();
-    if(next == "выход"){
+    if (next == "выход") {
         let user = await User.findOne({ id: bot.userid }).exec();
         user.questJson = JSON.stringify({ "IsQuest": false });
         user.save((err) => { if (err) console.log(err) });
@@ -112,11 +112,16 @@ bot.on('ready', () => {
         console.log(link);
     })
     bot.user.setActivity(">помощь", { type: "WATCHING" });
+
+    setInterval(() => {
+        sendchannel.send('Тестовое сообщение каждые 5 сек')
+    }, 5000)
+
 })
 
 bot.on('message', async message => {
     if (message.author.bot) return;
-    bot.dmsend = function(msg){
+    bot.dmsend = function(msg) {
         message.author.send(msg);
     }
     if (message.channel.type == "dm") {
@@ -139,9 +144,9 @@ bot.on('message', async message => {
         message.channel.send(msg);
     };
     bot.sendQuest = async function(stage) {
-        let answer = "";        
+        let answer = "";
         let breaks = stage.question.split("(br)");
-        breaks.forEach((str)=>{
+        breaks.forEach((str) => {
             answer += str + "\n";
         });
         if (stage.end) {

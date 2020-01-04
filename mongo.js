@@ -8,6 +8,7 @@ var userScheme = new Schema({
     nickname: String,
     id: String,
     questJson: String,
+    attempts: Number
 });
 
 const User = mongoose.model("User", userScheme);
