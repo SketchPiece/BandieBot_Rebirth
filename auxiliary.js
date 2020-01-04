@@ -6,9 +6,9 @@ module.exports.randomInteger = function(min, max) {
     return rand;
 }
 module.exports.IsBannedChannel = function(id) {
-    config.banned_channels.forEach(banned_id => {
-        if (banned_id == id) return true;
-    });
+    for (var i = 0; i < config.banned_channels.length; i++) {
+        if (config.banned_channels[i] == id) return true;
+    }
     return false;
 }
 module.exports.FindMats = function(bot, message) {

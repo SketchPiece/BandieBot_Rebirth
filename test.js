@@ -1,1 +1,1 @@
-console.log(process.env.BINDIE_BANNED_CHANNEL)
+console.log(require("./botconfig").banned_channels)

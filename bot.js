@@ -165,8 +165,8 @@ bot.on('message', async message => {
     }
 
     await CreateUser(bot);
-
     if (IsBannedChannel(message.channel.id)) return;
+
 
 
     // console.log(await IsQuest(bot.userid));
