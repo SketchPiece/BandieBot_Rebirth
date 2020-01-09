@@ -7,7 +7,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 var userScheme = new Schema({
     nickname: String,
     id: String,
-    questJson: String,
+    quest: {},
     attempts: Number,
     forgive: Boolean
 });

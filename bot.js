@@ -69,9 +69,9 @@ let QuestEngineWork = aux.QuestEngineWork;
 let EveryDayAt = aux.EveryDayAt;
 
 async function CreateUser(bot) {
-    user = await User.findOne({ id: bot.userid });
+    let user = await User.findOne({ id: bot.userid });
     if (!user) {
-        user = new User({ nickname: bot.name, id: bot.userid, questJson: "{}", attempts: 5 });
+        user = new User({ nickname: bot.name, id: bot.userid, quest: { IsQuest: false }, attempts: 5,forgive:true });
         await user.save();
     }
 }
@@ -108,17 +108,8 @@ bot.on('ready', () => {
 
 bot.on('message', async message => {
     if (message.author.bot) return;
-    bot.dmsend = function(msg) {
-        message.author.send(msg);
-    }
-    if (message.channel.type == "dm") {
-        if (await IsQuest(bot.userid)) return QuestEngineWork(bot, message);
-        return;
-    }
-
     bot.name = message.author.username;
     bot.userid = message.author.id;
-
     bot.send = function send(msg) {
         message.channel.send(msg);
     };
@@ -130,7 +121,8 @@ bot.on('message', async message => {
         });
         if (stage.end) {
             let user = await User.findOne({ id: bot.userid }).exec();
-            user.questJson = JSON.stringify({ "IsQuest": false });
+            user.quest.IsQuest = false; // = JSON.stringify({ "IsQuest": false });
+            user.markModified('quest');
             user.save((err) => { if (err) console.log(err) });
             return bot.dmsend(answer + "\n`Конец квеста`");
         }
@@ -141,6 +133,14 @@ bot.on('message', async message => {
         answer += "```"
 
         bot.dmsend(answer);
+    }
+
+    bot.dmsend = function(msg) {
+        message.author.send(msg);
+    }
+    if (message.channel.type == "dm") {
+        if (await IsQuest(bot.userid)) return QuestEngineWork(bot, message,"выход");
+        return;
     }
 
     await CreateUser(bot);

@@ -1,35 +1,33 @@
 let config = require('./botconfig.js');
 let User = require("./mongo").User
+let prefix = config.prefix;
 
 module.exports.IsQuest = async function(id) {
+    // console.log(id);
     let user = await User.findOne({ id: id }).exec();
-    UserJson = JSON.parse(user.questJson);
-    if (!UserJson["IsQuest"]) {
-        user.questJson = JSON.stringify({ "IsQuest": false });
-        user.save((err) => { if (err) console.log(err) })
-        return false
-    }
-    if (UserJson["IsQuest"]) return true;
-    else return false;
+    // console.log(user);
+    return user.quest.IsQuest; 
 }
 
-module.exports.QuestEngineWork = async function(bot, message) {
+module.exports.QuestEngineWork = async function(bot, message, exit) {
     let user = await User.findOne({ id: bot.userid }).exec();
-    let json = JSON.parse(user.questJson);
 
-    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
+    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
     let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
     next = temp.shift().toLowerCase();
-    if (next == "выход") {
+    if (next == exit) {
         let user = await User.findOne({ id: bot.userid }).exec();
-        user.questJson = JSON.stringify({ "IsQuest": false });
+        user.quest.IsQuest = false;
+        user.quest.QuestName = undefined;
+        user.quest.Status = undefined;
+        user.markModified('quest');
         user.save((err) => { if (err) console.log(err) });
-        return bot.dmsend("`Тест был завершен досрочно`");
+        return bot.dmsend("`Квест был завершен досрочно`");
     }
-    if (!bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]) return bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
-    json["Status"] = bot.quests[json["QuestName"]].stages[json["Status"]].answers[next]
-    bot.sendQuest(bot.quests[json["QuestName"]].stages[json["Status"]]);
-    user.questJson = JSON.stringify(json);
+    if (!bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]) return bot.sendQuest(bot.quests[user.ques.QuestName].stages[user.quest.Status]);
+    user.quest.Status = bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]
+    bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
+    user.markModified('quest');
     user.save((err) => { if (err) console.log(err) })
 }
 

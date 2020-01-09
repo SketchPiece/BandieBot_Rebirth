@@ -1,31 +1,18 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
 const User = require("../mongo").User
-
-async function IsQuest(id) {
-    let user = await User.findOne({ id: id }).exec();
-    UserJson = JSON.parse(user.questJson);
-    if (!UserJson["IsQuest"]) {
-        user.questJson = JSON.stringify({ "IsQuest": false });
-        user.save((err) => { if (err) console.log(err) })
-        return false
-    }
-    if (UserJson["IsQuest"]) return true;
-    else return false;
-}
+const IsQuest = require("../auxiliary").IsQuest;
 
 module.exports.run = async(bot, message, args) => {
     if(await IsQuest(bot.userid)) return bot.send("Квест уже запущен! Выйдите из текущего что бы начать новый");
     if (args[0]) {
         if (!bot.quests[args[0]]) return bot.send("Такого квеста не существует!");
         user = await User.findOne({ id: bot.userid }).exec();
-        json = JSON.parse(user.questJson);
-        json["IsQuest"] = true;
-        json["QuestName"] = args[0];
-        json["Status"] = 0;
-        user.questJson = JSON.stringify(json);
+        user.quest.IsQuest = true;
+        user.quest.QuestName = args[0];
+        user.quest.Status = 0;
+        user.markModified('quest');
         user.save((err) => { if (err) console.log(err) })
-        bot.quests[args[0]];
         bot.send("Квест с кодом "+ args[0]+ " запущен");
         return bot.sendQuest(bot.quests[args[0]].stages[0]);
     }
