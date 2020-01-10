@@ -1,6 +1,6 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
-let User = require("../mongo").User
+let User = require("../source/mongo").User
 
 module.exports.run = async(bot, message, args) => {
     try {

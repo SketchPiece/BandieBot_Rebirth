@@ -1,7 +1,7 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
-const User = require("../mongo").User
-const IsQuest = require("../auxiliary").IsQuest;
+const User = require("../source/mongo").User
+const IsQuest = require("../source/auxiliary").IsQuest;
 
 module.exports.run = async(bot, message, args) => {
     if(await IsQuest(bot.userid)) return bot.send("Квест уже запущен! Выйдите из текущего что бы начать новый");

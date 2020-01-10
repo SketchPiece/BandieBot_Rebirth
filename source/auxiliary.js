@@ -1,4 +1,4 @@
-let config = require('./botconfig.js');
+let config = require('../botconfig.js');
 let User = require("./mongo").User
 let prefix = config.prefix;
 

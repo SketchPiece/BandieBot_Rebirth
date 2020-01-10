@@ -6,9 +6,9 @@ bot.quests = {};
 const fs = require('fs');
 let config = require('./botconfig.js');
 // let profile = require('./profile.json');
-let aux = require("./auxiliary.js");
-let User = require("./mongo").User
-let QuestEngine = require("./questEngine")
+let aux = require("./source/auxiliary");
+let User = require("./source/mongo").User
+let QuestEngine = require("./source/questEngine")
 let token = config.token;
 let prefix = config.prefix;
 

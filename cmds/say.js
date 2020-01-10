@@ -33,7 +33,7 @@ module.exports.run = async (bot,message,args) => {
         sayChannel.send(sayText);
     }
     catch{
-        message.channel.send("Ошибка! Правильно: \n>сказать [id канала] [текст]\n>say [id канала] [текст]").then(msg => msg.delete(5*1000));
+        message.author.send("Ошибка! Правильно: \n>сказать [id канала] [текст]\n>say [id канала] [текст]").then(msg => msg.delete(5*1000));
     }
     
     //rUser.send(`*Протянула анонимную записку на которой написано:* \n«${anonText}»`)

@@ -2,16 +2,8 @@ const Discord = module.require("discord.js");
 const fs = require("fs");
 
 module.exports.run = async(bot, message, args) => {
-    var Mass = [`*${message.author} заметил записку на стене*\n«Дневник разработчика: добавить больше пасхалок\n-Скетч»`, `*${message.author} заметил записку на  стене*\n«Харе бухать энергетики!!\n-Скетч»`, `*${message.author} заметил записку на  стене*\n«Дневник разработчика: Не ленись... пж\n-Скетч»`, `*${message.author} заметил записку на  стене*\n«От винта!\n-Скетч»`]; //база ответов
-    /*Ответы вводяться в ковычках через запятую. Если хочешь что бы бот обращался к юзеру, используй конструкцию с ковычками `фраза`(пример:последняя фраза)*/
-    /* <@${message.author.id}> - польззователь */
-    function randomInteger(min, max) {
-        var rand = min + Math.random() * (max - min)
-        rand = Math.round(rand);
-        return rand;
-    }
-    var random = randomInteger(0, Mass.length - 1);
-    message.channel.send(Mass[random]);
+    var Mass = [`Дневник разработчика: добавить больше пасхалок`, `Скоро я закончу... ещё чуть чуть...`, `Дневник разработчика: Надо сделать квантограббер который переместит пользователя в параллельную вселенную! Ах да... я не могу противиться законам физики...`, `От винта!`]; //база ответов
+    message.channel.send(`*${message.author} заметил записку на стене*\n«${Mass[bot.randint(0, Mass.length - 1)]}»\n-Скетч`);
 };
 module.exports.help = {
     name: "<@331103366774259713>",
