@@ -5,11 +5,12 @@ const uri = require("../botconfig").mongo_uri;
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 // console.log(uri);
 var userScheme = new Schema({
-    nickname: String,
     id: String,
+    nickname: String,
     quest: {},
     attempts: Number,
-    forgive: Boolean
+    forgive: Boolean,
+    task: {}
 });
 
 const User = mongoose.model("User", userScheme);

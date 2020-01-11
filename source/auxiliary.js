@@ -2,21 +2,12 @@ let config = require('../botconfig.js');
 let User = require("./mongo").User
 let prefix = config.prefix;
 
-module.exports.IsQuest = async function(id) {
-    // console.log(id);
-    let user = await User.findOne({ id: id }).exec();
-    // console.log(user);
-    return user.quest.IsQuest; 
-}
-
 module.exports.QuestEngineWork = async function(bot, message, exit) {
-    let user = await User.findOne({ id: bot.userid }).exec();
-
+    let user = bot.userdb;
     if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
     let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
     next = temp.shift().toLowerCase();
     if (next == exit) {
-        let user = await User.findOne({ id: bot.userid }).exec();
         user.quest.IsQuest = false;
         user.quest.QuestName = undefined;
         user.quest.Status = undefined;
@@ -70,8 +61,7 @@ module.exports.FindMats = function(message) {
     return false;
 }
 
-module.exports.MatsAction = async function(bot, message) {
-    let user = await User.findOne({ id: bot.userid }).exec();
+module.exports.MatsAction = async function(bot, message, user) {
     user.attempts--;
     bot.send(`А ${message.author} матерится! ${user.attempts}`);
     if (user.attempts == 0) user.attempts -= 11;
@@ -79,7 +69,7 @@ module.exports.MatsAction = async function(bot, message) {
 }
 
 module.exports.FinishAttempts = async function(bot) {
-    let user = await User.findOne({ id: bot.userid }).exec();
+    let user = bot.userdb;
     if (user.attempts <= 0) return true;
     return false;
 }

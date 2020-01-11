@@ -5,8 +5,8 @@ bot.aliases = new Discord.Collection();
 bot.quests = {};
 const fs = require('fs');
 let config = require('./botconfig.js');
-// let profile = require('./profile.json');
 let aux = require("./source/auxiliary");
+let tasks = require("./source/task_system");
 let User = require("./source/mongo").User
 let QuestEngine = require("./source/questEngine")
 let token = config.token;
@@ -54,31 +54,29 @@ bot.randint = function(min, max) {
     return rand;
 }
 
-let IsBannedChannel = aux.IsBannedChannel;
+let IsBannedChannel = aux.IsBannedChannel,
+    FindMats = aux.FindMats,
+    MatsAction = aux.MatsAction,
+    FinishAttempts = aux.FinishAttempts,
+    QuestEngineWork = aux.QuestEngineWork,
+    EveryDayAt = aux.EveryDayAt;
 
-let FindMats = aux.FindMats;
 
-let MatsAction = aux.MatsAction;
-
-let FinishAttempts = aux.FinishAttempts;
-
-let IsQuest = aux.IsQuest;
-
-let QuestEngineWork = aux.QuestEngineWork;
-
-let EveryDayAt = aux.EveryDayAt;
-
+let TaskChecker = tasks.TaskChecker,
+    RandomTask = tasks.RandomTask;
 async function CreateUser(bot) {
-    let user = await User.findOne({ id: bot.userid });
+    let user = await User.findOne({ id: bot.userid }).exec();
     if (!user) {
-        user = new User({ nickname: bot.name, id: bot.userid, quest: { IsQuest: false }, attempts: 5,forgive:true });
+        user = new User({ nickname: bot.name, id: bot.userid, quest: { IsQuest: false }, attempts: 5, forgive: true, task: RandomTask(bot) });
         await user.save();
+        return user;
     }
+    return user;
 }
 
 async function UpdateForgive() {
     let users = await User.find({}).exec();
-    console.log("Обновление матоф");
+    console.log("Новый день~");
     users.forEach(async(user) => {
         user.forgive = true;
         await user.save();
@@ -97,7 +95,7 @@ bot.on('ready', () => {
 
     setInterval(async() => {
             let users = await User.find({}).exec();
-            console.log("Обновление матоф");
+            // console.log("Обновление матоф");
             users.forEach(async(user) => {
                 if (user.attempts < 5) user.attempts++;
                 await user.save();
@@ -109,6 +107,7 @@ bot.on('ready', () => {
 bot.on('message', async message => {
     if (message.author.bot) return;
     bot.name = message.author.username;
+    // bot.user = message.author;
     bot.userid = message.author.id;
     bot.send = function send(msg) {
         message.channel.send(msg);
@@ -138,18 +137,17 @@ bot.on('message', async message => {
     bot.dmsend = function(msg) {
         message.author.send(msg);
     }
+    bot.userdb = await CreateUser(bot);
+    TaskChecker(bot, message);
     if (message.channel.type == "dm") {
-        if (await IsQuest(bot.userid)) return QuestEngineWork(bot, message,"выход");
+        if (bot.userdb.quest.IsQuest) return QuestEngineWork(bot, message, bot.userdb, "выход");
         return;
     }
 
-    await CreateUser(bot);
     if (IsBannedChannel(message.channel.id)) return;
-    if (await FinishAttempts(bot)) return;
-    if (FindMats(message)) return MatsAction(bot, message);
+    if (!FinishAttempts(bot)) return;
 
-
-    // console.log(await IsQuest(bot.userid));
+    if (FindMats(message)) return MatsAction(bot, message, bot.userdb);
 
     if (!message.content.startsWith(prefix)) return;
     let args = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
