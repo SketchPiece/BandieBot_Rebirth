@@ -1,10 +1,10 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
 const User = require("../source/mongo").User
-const IsQuest = require("../source/auxiliary").IsQuest;
+const prefix = require("../botconfig").prefix;
 
 module.exports.run = async(bot, message, args) => {
-    if(await IsQuest(bot.userid)) return bot.send("Квест уже запущен! Выйдите из текущего что бы начать новый");
+    if(bot.userdb.quest.IsQuest) return bot.send("Квест уже запущен! Выйдите из текущего что бы начать новый");
     if (args[0]) {
         if (!bot.quests[args[0]]) return bot.send("Такого квеста не существует!");
         user = await User.findOne({ id: bot.userid }).exec();
@@ -22,8 +22,8 @@ module.exports.run = async(bot, message, args) => {
         qstAnswer += `Название: ${bot.quests[quest].title}\nОписание: ${bot.quests[quest].description}\nАвтор: ${bot.quests[quest].author}` + "\nКод: " + quest + "\n\n";
     }
     qstAnswer += "```\n"
-    qstAnswer += "`Что бы выбрать квест введите >квест [код]`"
-    qstAnswer += "\n`Что бы выйти из квеста введите >выход`"
+    qstAnswer += "`Что бы выбрать квест введите "+prefix+"квест [код]`"
+    qstAnswer += "\n`Что бы выйти из квеста введите "+prefix+"выход`"
 
     bot.send(qstAnswer);
 };

@@ -74,11 +74,12 @@ async function CreateUser(bot) {
     return user;
 }
 
-async function UpdateForgive() {
+async function NextDay() {
     let users = await User.find({}).exec();
     console.log("Новый день~");
     users.forEach(async(user) => {
         user.forgive = true;
+        user.task = RandomTask(bot);
         await user.save();
     })
 }
@@ -91,7 +92,7 @@ bot.on('ready', () => {
     bot.generateInvite(["ADMINISTRATOR"]).then(link => {
         console.log(link);
     })
-    bot.user.setActivity(">помощь", { type: "WATCHING" });
+    bot.user.setActivity(prefix+"помощь", { type: "WATCHING" });
 
     setInterval(async() => {
             let users = await User.find({}).exec();
@@ -101,7 +102,7 @@ bot.on('ready', () => {
                 await user.save();
             });
         }, 1000 * 60 * 60) //действие каждые пять минут
-    EveryDayAt(0, 0, UpdateForgive);
+    EveryDayAt(0, 0, NextDay);
 })
 
 bot.on('message', async message => {

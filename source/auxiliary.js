@@ -61,9 +61,10 @@ module.exports.FindMats = function(message) {
     return false;
 }
 
-module.exports.MatsAction = async function(bot, message, user) {
+module.exports.MatsAction = async function(bot, message) {
+    let user = await User.findOne({ id: bot.userid }).exec();
     user.attempts--;
-    bot.send(`А ${message.author} матерится! ${user.attempts}`);
+    bot.send(`${message.author} позволяет себе использовать бранную речь!`);
     if (user.attempts == 0) user.attempts -= 11;
     await user.save();
 }
