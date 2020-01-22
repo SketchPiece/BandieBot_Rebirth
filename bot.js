@@ -4,6 +4,7 @@ bot.commands = new Discord.Collection();
 bot.aliases = new Discord.Collection();
 bot.quests = {};
 bot.items = {};
+bot.voice_timeouts = {}
 const fs = require('fs');
 let config = require('./botconfig.js');
 let aux = require("./source/auxiliary");
@@ -50,7 +51,7 @@ fs.readdir('./quests', (err, files) => {
 fs.readdir("./items", (err,files) => {
     if(err) console.log(err);
     let dirs = files.filter(f => !f.includes('.'));
-    if(dirs.length <= 0) return console.log("Нет предметов для загрузки...")
+    if(dirs.length <= 0) return console.log("Нет предметов для загрузки...");
     dirs.forEach((f,i)=>{
         let item = require(`./items/${f}/item.json`);
         let path = `./items/${f}/item.png`;
@@ -82,9 +83,9 @@ let IsBannedChannel = aux.IsBannedChannel,
     QuestEngineWork = aux.QuestEngineWork,
     EveryDayAt = aux.EveryDayAt;
 
-
 let TaskChecker = tasks.TaskChecker,
-    RandomTask = tasks.RandomTask;
+    RandomTask = tasks.RandomTask,
+    TaskDone = tasks.TaskDone;
 async function CreateUser(bot) {
     let user = await User.findOne({ id: bot.userid }).exec();
     if (!user) {
@@ -106,9 +107,59 @@ async function NextDay() {
 }
 
 /* Всопогательные функции */
+async function VoiceWaiting(member){
+    let userdb = await User.findOne({ id: member.user.id }).exec();
+    if(!userdb.task.voice_min) {
+        userdb.task.voice_min = 0;
+        // userdb.markModified('task');
+        // userdb.save((err)=>{if(err) console.log(err)});
+        // bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
+        // return;
+    }
+    if(userdb.task.voice_min >= 60) {
+        TaskDone(bot,member.user,userdb);
+        return;
+    }
+    if(member.voiceChannel.members.array().length<2) return;
+    userdb.task.voice_min += 1;
+    userdb.markModified('task');
+    userdb.save((err)=>{if(err) console.log(err)})
+    // console.log("Прошла секунда");
+    // console.log(userdb.task.voice_min)
+    bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000,member);
+}
 
 
-bot.on('ready', () => {
+bot.on('voiceStateUpdate', async (oldmem,member) =>{
+    if(member.voiceChannel) {
+        // console.log(`${member.user.username} вошел в голос`);
+        let userdb = await User.findOne({ id: member.user.id }).exec();
+        if(!userdb) {
+            userdb = new User({ nickname: member.user.username, id: member.user.id, quest: { IsQuest: false }, attempts: 5, forgive: true, task: RandomTask(bot) });
+            await userdb.save();
+            return;
+        }
+        if(userdb.task.id != 1) return;
+        if(userdb.task.done) return;
+        bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000,member);
+        // console.log();
+    }
+    else {
+        // console.log(`${member.user.username} вышел`);
+        if(!bot.voice_timeouts[member.user.id]) return;
+        clearTimeout(bot.voice_timeouts[member.user.id]);
+        let userdb = await User.findOne({ id: member.user.id }).exec();
+        userdb.task.voice_min = 0;
+        userdb.markModified('task');
+        userdb.save((err)=>{if(err) console.log(err)});   
+    }
+});
+bot.on("messageReactionAdd", (reac,user)=>{
+    console.log("React");
+    
+})
+
+bot.on('ready', async () => {
     console.log(`Скрежет металла и звуки паровых котлов, я снова готова работать...`);
     bot.generateInvite(["ADMINISTRATOR"]).then(link => {
         console.log(link);
@@ -124,6 +175,15 @@ bot.on('ready', () => {
             });
         }, 1000 * 60 * 60) //действие каждые пять минут
     EveryDayAt(0, 0, NextDay);
+
+    // DEV
+    let users = await User.find({}).exec();
+    console.log("Новый день~");
+    users.forEach(async(user) => {
+        user.forgive = true;
+        user.task = RandomTask(bot);
+        await user.save();
+    })
 })
 
 bot.on('message', async message => {

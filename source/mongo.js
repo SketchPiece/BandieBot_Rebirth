@@ -10,7 +10,8 @@ var userScheme = new Schema({
     quest: {},
     attempts: Number,
     forgive: Boolean,
-    task: {}
+    task: {},
+    inventory: [String]
 });
 
 const User = mongoose.model("User", userScheme);

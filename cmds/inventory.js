@@ -1,11 +1,11 @@
 const Discord = module.require("discord.js");
 const fs = require("fs");
-let SendTaskInfo = require('../source/task_system').SendTaskInfo;
+let SendInventory = require('../source/task_system').SendInventory;
 
 module.exports.run = async(bot, message, args) => {
-    SendTaskInfo(bot);
+    SendInventory(bot);
 };
 module.exports.help = {
-    name: "задание",
-    aliases: ["task"]
+    name: "инвентарь",
+    aliases: ["inventory"]
 };
