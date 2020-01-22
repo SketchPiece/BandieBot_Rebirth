@@ -132,6 +132,7 @@ async function VoiceWaiting(member){
 
 bot.on('voiceStateUpdate', async (oldmem,member) =>{
     if(member.voiceChannel) {
+        if(bot.voice_timeouts[member.user.id]) return;
         // console.log(`${member.user.username} вошел в голос`);
         let userdb = await User.findOne({ id: member.user.id }).exec();
         if(!userdb) {
@@ -148,6 +149,7 @@ bot.on('voiceStateUpdate', async (oldmem,member) =>{
         // console.log(`${member.user.username} вышел`);
         if(!bot.voice_timeouts[member.user.id]) return;
         clearTimeout(bot.voice_timeouts[member.user.id]);
+        bot.voice_timeouts[member.user.id] = undefined;
         let userdb = await User.findOne({ id: member.user.id }).exec();
         userdb.task.voice_min = 0;
         userdb.markModified('task');
