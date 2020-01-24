@@ -1,5 +1,7 @@
 ﻿const Discord = require('discord.js');
+// import Discord from 'discord.js';
 const bot = new Discord.Client();
+
 bot.commands = new Discord.Collection();
 bot.aliases = new Discord.Collection();
 bot.quests = {};
@@ -48,24 +50,24 @@ fs.readdir('./quests', (err, files) => {
     console.log(`Я загрузила ${qstfiles.length} квестов`)
 });
 
-fs.readdir("./items", (err,files) => {
-    if(err) console.log(err);
+fs.readdir("./items", (err, files) => {
+    if (err) console.log(err);
     let dirs = files.filter(f => !f.includes('.'));
-    if(dirs.length <= 0) return console.log("Нет предметов для загрузки...");
-    dirs.forEach((f,i)=>{
+    if (dirs.length <= 0) return console.log("Нет предметов для загрузки...");
+    dirs.forEach((f, i) => {
         let item = require(`./items/${f}/item.json`);
         let path = `./items/${f}/item.png`;
-        
+
         bot.items[item.name] = {
             "title": item.title,
             "discription": item.discription,
-            "rarity":item.rarity,
+            "rarity": item.rarity,
             "path": path
         }
 
     })
     console.log(`Я загрузила ${dirs.length} предметов`)
-    // console.log(bot.items);
+        // console.log(bot.items);
 });
 
 /* Всопогательные функции */
@@ -86,6 +88,7 @@ let IsBannedChannel = aux.IsBannedChannel,
 let TaskChecker = tasks.TaskChecker,
     RandomTask = tasks.RandomTask,
     TaskDone = tasks.TaskDone;
+
 async function CreateUser(bot) {
     let user = await User.findOne({ id: bot.userid }).exec();
     if (!user) {
@@ -105,68 +108,67 @@ async function NextDay() {
         await user.save();
     })
 }
-
 /* Всопогательные функции */
-async function VoiceWaiting(member){
+
+async function VoiceWaiting(member) {
     let userdb = await User.findOne({ id: member.user.id }).exec();
-    if(!userdb.task.voice_min) {
+    if (!userdb.task.voice_min) {
         userdb.task.voice_min = 0;
         // userdb.markModified('task');
         // userdb.save((err)=>{if(err) console.log(err)});
         // bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
         // return;
     }
-    if(userdb.task.voice_min >= 60) {
-        TaskDone(bot,member.user,userdb);
+    if (userdb.task.voice_min >= 60) {
+        TaskDone(bot, member.user, userdb);
         return;
     }
-    if(member.voiceChannel.members.array().length<2) return;
+    if (member.voiceChannel.members.array().length < 2) return;
     userdb.task.voice_min += 1;
     userdb.markModified('task');
-    userdb.save((err)=>{if(err) console.log(err)})
-    // console.log("Прошла секунда");
-    // console.log(userdb.task.voice_min)
-    bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000,member);
+    userdb.save((err) => { if (err) console.log(err) })
+        // console.log("Прошла секунда");
+        // console.log(userdb.task.voice_min)
+    bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
 }
 
 
-bot.on('voiceStateUpdate', async (oldmem,member) =>{
-    if(member.voiceChannel) {
-        if(bot.voice_timeouts[member.user.id]) return;
+bot.on('voiceStateUpdate', async(oldmem, member) => {
+    if (member.voiceChannel) {
+        if (bot.voice_timeouts[member.user.id]) return;
         // console.log(`${member.user.username} вошел в голос`);
         let userdb = await User.findOne({ id: member.user.id }).exec();
-        if(!userdb) {
+        if (!userdb) {
             userdb = new User({ nickname: member.user.username, id: member.user.id, quest: { IsQuest: false }, attempts: 5, forgive: true, task: RandomTask(bot) });
             await userdb.save();
             return;
         }
-        if(userdb.task.id != 1) return;
-        if(userdb.task.done) return;
-        bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000,member);
+        if (userdb.task.id != 1) return;
+        if (userdb.task.done) return;
+        bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
         // console.log();
-    }
-    else {
+    } else {
         // console.log(`${member.user.username} вышел`);
-        if(!bot.voice_timeouts[member.user.id]) return;
+        if (!bot.voice_timeouts[member.user.id]) return;
         clearTimeout(bot.voice_timeouts[member.user.id]);
         bot.voice_timeouts[member.user.id] = undefined;
         let userdb = await User.findOne({ id: member.user.id }).exec();
         userdb.task.voice_min = 0;
         userdb.markModified('task');
-        userdb.save((err)=>{if(err) console.log(err)});   
+        userdb.save((err) => { if (err) console.log(err) });
     }
 });
-bot.on("messageReactionAdd", (reac,user)=>{
+bot.on("messageReactionAdd", (reac, user) => {
     console.log("React");
-    
+
 })
 
-bot.on('ready', async () => {
+bot.on('ready', async() => {
     console.log(`Скрежет металла и звуки паровых котлов, я снова готова работать...`);
     bot.generateInvite(["ADMINISTRATOR"]).then(link => {
         console.log(link);
     })
-    bot.user.setActivity(prefix+"помощь", { type: "WATCHING" });
+    bot.user.setActivity(prefix + "помощь", { type: "WATCHING" });
 
     setInterval(async() => {
             let users = await User.find({}).exec();

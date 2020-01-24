@@ -15,6 +15,7 @@ function QuestParse(content) {
         strings.forEach(str => {
             var stage = str.replace(/\[(.+?)\]/, '').match(/\d+/)[0];
             var data = str.match(/\[(.+?)\]/g);
+            // console.log(data);
 
             questObj.stages[stage] = {
                 question: data[0].match(/\[(.+?)\]/)[1]
@@ -37,8 +38,10 @@ function QuestParse(content) {
 
         });
         return questObj;
-    } catch {
+    } catch (e) {
+        console.log(e);
         return false
+
     }
 }
 
