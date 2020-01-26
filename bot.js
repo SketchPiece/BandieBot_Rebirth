@@ -112,15 +112,8 @@ async function NextDay() {
 
 async function VoiceWaiting(member) {
     let userdb = await User.findOne({ id: member.user.id }).exec();
-    if (!userdb.task.voice_min) {
-        userdb.task.voice_min = 0;
-        // userdb.markModified('task');
-        // userdb.save((err)=>{if(err) console.log(err)});
-        // bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
-        // return;
-    }
     if (userdb.task.voice_min >= 60) {
-        TaskDone(bot, member.user, userdb);
+        TaskDone(bot, member.user);
         return;
     }
     if (member.voiceChannel.members.array().length < 2) return;
@@ -158,9 +151,30 @@ bot.on('voiceStateUpdate', async(oldmem, member) => {
         userdb.save((err) => { if (err) console.log(err) });
     }
 });
-bot.on("messageReactionAdd", (reac, user) => {
-    console.log("React");
+bot.on("messageReactionAdd", async (reac, user) => {
+    // console.log(
+    let userdb = await User.findOne({ id: reac.message.author.id }).exec();
+    if (!userdb) {
+        userdb = new User({ nickname: member.user.username, id: member.user.id, quest: { IsQuest: false }, attempts: 5, forgive: true, task: RandomTask(bot) });
+        await userdb.save();
+        return;
+    }
+    if (userdb.task.id != 2) return;
+    if (userdb.task.done) return;
+    reac.message.reactions.array().forEach((react)=>{
+        // console.log(react.count)
+        if(userdb.task.reacts<react.count){
+            userdb.task.reacts = react.count;
+        }
+    })
 
+    if(userdb.task.reacts>=2){
+        TaskDone(bot, reac.message.author);
+        return;
+    }
+    
+    userdb.markModified('task');
+    userdb.save((err) => { if (err) console.log(err) });
 })
 
 bot.on('ready', async() => {
@@ -188,6 +202,13 @@ bot.on('ready', async() => {
         user.task = RandomTask(bot);
         await user.save();
     })
+
+    // let items_arr = [];
+    // rn = require('./source/task_system').RandomItem;
+    // for(let i = 0;i<100;i++){
+    //     items_arr.push(rn(bot));
+    // } 
+    // console.log(items_arr);
 })
 
 bot.on('message', async message => {

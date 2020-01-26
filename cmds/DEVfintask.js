@@ -3,7 +3,7 @@ const fs = require("fs");
 let TaskDone = require('../source/task_system').TaskDone;
 
 module.exports.run = async(bot, message, args) => {
-    TaskDone(bot,message.author,bot.userdb);
+    await TaskDone(bot,message.author);
 };
 module.exports.help = {
     name: "выполнить",
