@@ -47,8 +47,23 @@ function QuestParse(content) {
 
 module.exports.QuestParse = QuestParse;
 
-// let fs = require("fs")
+module.exports.QuestEngineWork = async function(bot, message, exit) {
+    let user = await User.findOne({ id: bot.userid }).exec(); //
+    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
+    let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
+    next = temp.shift().toLowerCase();
+    if (next == exit) {
+        user.quest.IsQuest = false;
+        user.quest.QuestName = undefined;
+        user.quest.Status = undefined;
+        user.markModified('quest');
+        user.save((err) => { if (err) console.log(err) });
+        return bot.dmsend("`Квест был завершен досрочно`");
+    }
+    if (!bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]) return bot.sendQuest(bot.quests[user.ques.QuestName].stages[user.quest.Status]);
+    user.quest.Status = bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]
+    bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
+    user.markModified('quest');
 
-// var content = fs.readFileSync('./quests/test.qst', 'utf8')
-
-// console.log(QuestParse(content));
+    user.save((err) => { if (err) console.log(err) })
+}

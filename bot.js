@@ -1,20 +1,19 @@
 ﻿const Discord = require('discord.js');
-// import Discord from 'discord.js';
-const bot = new Discord.Client();
+const fs = require('fs');
+const config = require('./botconfig.js');
+const { prefix, token } = config;
 
+let { IsBannedChannel, FindMats, MatsAction, FinishAttempts, EveryDayAt } = require("./source/auxiliary");
+let { TaskChecker, RandomTask, TaskDone } = require("./source/task_system");
+let { User } = require("./source/mongo");
+let { QuestParse, QuestEngineWork } = require("./source/quest_engine");
+
+const bot = new Discord.Client();
 bot.commands = new Discord.Collection();
 bot.aliases = new Discord.Collection();
 bot.quests = {};
 bot.items = {};
 bot.voice_timeouts = {}
-const fs = require('fs');
-let config = require('./botconfig.js');
-let aux = require("./source/auxiliary");
-let tasks = require("./source/task_system");
-let User = require("./source/mongo").User
-let QuestEngine = require("./source/questEngine")
-let token = config.token;
-let prefix = config.prefix;
 
 fs.readdir('./cmds', (err, files) => {
     if (err) console.log(err);
@@ -39,7 +38,7 @@ fs.readdir('./quests', (err, files) => {
     qstfiles.forEach((f, i) => {
         let questCode = fs.readFileSync(`./quests/${f}`, 'utf8');
         let questName = f.split('.')[0];
-        let questObj = QuestEngine.QuestParse(questCode);
+        let questObj = QuestParse(questCode);
         if (!questObj) {
             console.log(`${i + 1}.${questName} Ошибка!`);
         } else {
@@ -78,16 +77,6 @@ bot.randint = function(min, max) {
     return rand;
 }
 
-let IsBannedChannel = aux.IsBannedChannel,
-    FindMats = aux.FindMats,
-    MatsAction = aux.MatsAction,
-    FinishAttempts = aux.FinishAttempts,
-    QuestEngineWork = aux.QuestEngineWork,
-    EveryDayAt = aux.EveryDayAt;
-
-let TaskChecker = tasks.TaskChecker,
-    RandomTask = tasks.RandomTask,
-    TaskDone = tasks.TaskDone;
 
 async function CreateUser(bot) {
     let user = await User.findOne({ id: bot.userid }).exec();
@@ -108,7 +97,7 @@ async function NextDay() {
         await user.save();
     })
 }
-/* Всопогательные функции */
+
 
 async function VoiceWaiting(member) {
     let userdb = await User.findOne({ id: member.user.id }).exec();
@@ -125,6 +114,7 @@ async function VoiceWaiting(member) {
     bot.voice_timeouts[member.user.id] = setTimeout(VoiceWaiting, 1000, member);
 }
 
+/* Всопогательные функции */
 
 bot.on('voiceStateUpdate', async(oldmem, member) => {
     if (member.voiceChannel) {
@@ -151,7 +141,7 @@ bot.on('voiceStateUpdate', async(oldmem, member) => {
         userdb.save((err) => { if (err) console.log(err) });
     }
 });
-bot.on("messageReactionAdd", async (reac, user) => {
+bot.on("messageReactionAdd", async(reac, user) => {
     // console.log(
     let userdb = await User.findOne({ id: reac.message.author.id }).exec();
     if (!userdb) {
@@ -161,18 +151,18 @@ bot.on("messageReactionAdd", async (reac, user) => {
     }
     if (userdb.task.id != 2) return;
     if (userdb.task.done) return;
-    reac.message.reactions.array().forEach((react)=>{
+    reac.message.reactions.array().forEach((react) => {
         // console.log(react.count)
-        if(userdb.task.reacts<react.count){
+        if (userdb.task.reacts < react.count) {
             userdb.task.reacts = react.count;
         }
     })
 
-    if(userdb.task.reacts>=2){
+    if (userdb.task.reacts >= 2) {
         TaskDone(bot, reac.message.author);
         return;
     }
-    
+
     userdb.markModified('task');
     userdb.save((err) => { if (err) console.log(err) });
 })
@@ -202,19 +192,11 @@ bot.on('ready', async() => {
         user.task = RandomTask(bot);
         await user.save();
     })
-
-    // let items_arr = [];
-    // rn = require('./source/task_system').RandomItem;
-    // for(let i = 0;i<100;i++){
-    //     items_arr.push(rn(bot));
-    // } 
-    // console.log(items_arr);
 })
 
 bot.on('message', async message => {
     if (message.author.bot) return;
     bot.name = message.author.username;
-    // bot.user = message.author;
     bot.userid = message.author.id;
     bot.send = function send(msg) {
         message.channel.send(msg);

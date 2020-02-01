@@ -2,27 +2,6 @@ let config = require('../botconfig.js');
 let User = require("./mongo").User
 let prefix = config.prefix;
 
-module.exports.QuestEngineWork = async function(bot, message, exit) {
-    let user = await User.findOne({ id: bot.userid }).exec(); //
-    if (!message.content.startsWith(prefix)) return bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
-    let temp = message.content.slice(prefix.length).trim().split(/(\s+)/).filter(function(e) { return e.trim().length > 0; });
-    next = temp.shift().toLowerCase();
-    if (next == exit) {
-        user.quest.IsQuest = false;
-        user.quest.QuestName = undefined;
-        user.quest.Status = undefined;
-        user.markModified('quest');
-        user.save((err) => { if (err) console.log(err) });
-        return bot.dmsend("`Квест был завершен досрочно`");
-    }
-    if (!bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]) return bot.sendQuest(bot.quests[user.ques.QuestName].stages[user.quest.Status]);
-    user.quest.Status = bot.quests[user.quest.QuestName].stages[user.quest.Status].answers[next]
-    bot.sendQuest(bot.quests[user.quest.QuestName].stages[user.quest.Status]);
-    user.markModified('quest');
-
-    user.save((err) => { if (err) console.log(err) })
-}
-
 module.exports.IsBannedChannel = function(id) {
     for (var i = 0; i < config.banned_channels.length; i++) {
         if (config.banned_channels[i] == id) return true;

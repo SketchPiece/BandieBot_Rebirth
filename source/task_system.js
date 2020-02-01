@@ -1,7 +1,8 @@
 const main_id = require('../botconfig').server_channels.main;
-const prefix = require('../botconfig').prefix;
+const { prefix } = require('../botconfig');
 const Jimp = require("jimp");
-let User = require("./mongo").User
+const { User } = require("./mongo");
+let { RenderInfoDone, RenderInventory } = require('./render_ui');
 //Tasks
 taskList = [{
         title: "Печатный станок",
@@ -13,28 +14,28 @@ taskList = [{
             }
             TaskDone(bot, message.author);
         },
-        set: function(bot,task){
+        set: function(bot, task) {
             task.mess_count = 0;
-            task.goal = bot.randint(700,1200);
+            task.goal = bot.randint(700, 1200);
             return task;
         },
         percent: function(user) {
             return user.task.mess_count * 100 / user.task.goal;
         }
-    },{
+    }, {
         title: "Скажи гаф!",
         description: "Пообщайся с людьми в войс чате",
         action: function(bot, message, user) {},
-        set: function(bot,task){
+        set: function(bot, task) {
             task.voice_min = 0;
-            task.goal = bot.randint(30,120);
+            task.goal = bot.randint(30, 120);
 
             return task;
         },
         percent: function(user) {
             return user.task.voice_min * 100 / user.task.goal;
         }
-    },{
+    }, {
         title: "Пометь товарища!",
         description: "Получи несколько одинаковых реакций",
         action: function(bot, message, user) {
@@ -43,9 +44,9 @@ taskList = [{
                 Save(user);
             }
         },
-        set: function(bot,task){
+        set: function(bot, task) {
             task.reacts = 0;
-            task.goal = bot.randint(4,8);
+            task.goal = bot.randint(4, 8);
 
             return task;
         },
@@ -54,15 +55,15 @@ taskList = [{
         }
     }]
     //Functions
-let TaskDone = async function (bot,user) {
-    
+let TaskDone = async function(bot, user) {
+
     let done_message = bot.channels.find(channel => channel.id === main_id);
     // console.log(bot.user);
-    let userdb = await User.findOne({ id: user.id}).exec()
-    // console.log(userdb.inventory.length);
+    let userdb = await User.findOne({ id: user.id }).exec()
+        // console.log(userdb.inventory.length);
     userdb.task = { id: userdb.task.id, done: true };
     let item = null;
-    if(userdb.inventory.length<20){
+    if (userdb.inventory.length < 20) {
         item = RandomItem(bot);
         // console.log(item);
         userdb.inventory.push(item);
@@ -71,38 +72,40 @@ let TaskDone = async function (bot,user) {
     done_message.startTyping();
     await done_message.send(`${user} выполнил задание!`);
 
-    await done_message.send({files: [{
-        attachment: await GenerateInfoDone(taskList[userdb.task.id].title,taskList[userdb.task.id].description),
-        name: `sketch-gay.png`   
-    }]});
-    
-    if(item){
+    await done_message.send({
+        files: [{
+            attachment: await RenderInfoDone(taskList[userdb.task.id].title, taskList[userdb.task.id].description),
+            name: `sketch-gay.png`
+        }]
+    });
+
+    if (item) {
         done_message.send(`${user} получил предмет ${bot.items[item].title}!`);
-    }else{
+    } else {
         done_message.send(`У ${user} закончилось место в инвентаре!`);
     }
-    done_message.stopTyping();    
+    done_message.stopTyping();
 }
 
 module.exports.TaskDone = TaskDone;
 
-function RandomItem(bot){
+function RandomItem(bot) {
     let rand = Math.random();
     let rarity;
     if (rand < 0.70) rarity = 1;
     else if (rand < 0.90) rarity = 2;
     else if (rand < 0.99) rarity = 3;
     else rarity = 4;
-    
+
     let rarity_items = [];
     // console.log(rarity);
     let keys = Object.keys(bot.items);
 
     keys.forEach(key => {
-        if(bot.items[key].rarity == rarity) rarity_items.push(key);
+        if (bot.items[key].rarity == rarity) rarity_items.push(key);
     });
     // console.log(rarity_items);
-    return rarity_items[bot.randint(0,rarity_items.length-1)];
+    return rarity_items[bot.randint(0, rarity_items.length - 1)];
 }
 module.exports.RandomItem = RandomItem;
 module.exports.TaskDone = TaskDone;
@@ -128,75 +131,29 @@ module.exports.RandomTask = function(bot) {
 }
 module.exports.SendTaskInfo = async function(bot) {
     let user = bot.userdb;
-    if (user.task.done) return bot.send({files: [{
-        attachment: await GenerateInfoDone(taskList[user.task.id].title,taskList[user.task.id].description),
-        name: `fontaid-gay.png`   
-    }]});
+    if (user.task.done) return bot.send({
+        files: [{
+            attachment: await RenderInfoDone(taskList[user.task.id].title, taskList[user.task.id].description),
+            name: `fontaid-gay.png`
+        }]
+    });
     // bot.send(`Задание "${taskList[user.task.id].title}" выполнено на ${taskList[user.task.id].percent(user)}%!\n` + "`" + taskList[user.task.id].description + "`");
-    
-    let img = await GenerateInfoPercent(taskList[user.task.id].percent(user),taskList[user.task.id].title,taskList[user.task.id].description);
-    bot.send({files: [{
-        attachment: img,
-        name: `fontaid-gay.png`   
-    }]});
+
+    let img = await GenerateInfoPercent(taskList[user.task.id].percent(user), taskList[user.task.id].title, taskList[user.task.id].description);
+    bot.send({
+        files: [{
+            attachment: img,
+            name: `fontaid-gay.png`
+        }]
+    });
 }
 
-module.exports.SendInventory = async function(bot){
+module.exports.SendInventory = async function(bot) {
     let user = bot.userdb; //
-    bot.send({files: [{
-        attachment: await GenerateInventory(bot,user),
-        name: `sketch-gay.png`   
-    }]});
+    bot.send({
+        files: [{
+            attachment: await RenderInventory(bot, user),
+            name: `sketch-gay.png`
+        }]
+    });
 }
-
-async function GenerateInventory(bot,user){
-    let inv = await Jimp.read("./imgs/inventory.png");
-    // let inventory_temp = await Jimp.read("./item-template.png");
-    let cache = {};
-    for(let i = 0,j=5,k=-1; i<user.inventory.length;i++, j++){
-        if (i % 5 === 0) {
-            k++;
-            j = j-5;
-        }
-        
-        // console.log(j+" "+k)
-        if(!cache[user.inventory[i]]){
-            cache[user.inventory[i]] = await Jimp.read(bot.items[user.inventory[i]].path)
-        } 
-        
-        inv.composite(cache[user.inventory[i]],j*512,k*512);
-    }
-    // console.log(user.inventory.length);
-
-    return await inv.getBufferAsync(Jimp.MIME_PNG);
-}
-
-async function GenerateInfoPercent(percent,title,description) {
-    img = await Jimp.read('./imgs/progress.png');
-    black = await Jimp.read('./imgs/black.png');
-    bg = await (await Jimp.read('./imgs/black.png')).invert();
-    if(!percent) percent = 0;
-    // console.log(560*percent/100);
-    black.resize(560*percent/100+1,25); //560
-    img.composite(black,20,110,{mode: Jimp.BLEND_DESTINATION_OVER});
-    
-    img.composite(bg,0,0,{mode: Jimp.BLEND_DESTINATION_OVER})
-
-    font = await Jimp.loadFont("./imgs/fonts/font.fnt");
-    img.print(font,220,15, title);
-    img.print(font,30,60, description);
-
-    return await img.getBufferAsync(Jimp.MIME_PNG);
-}
-
-async function GenerateInfoDone(title,description) {
-    img = await Jimp.read('./imgs/done.png');
-    font = await Jimp.loadFont("./imgs/fonts/font.fnt");
-    
-    img.print(font,220,15, title);
-    img.print(font,30,60, description);
-
-    return await img.getBufferAsync(Jimp.MIME_PNG);
-    // img.write("set.png")
-}
-
